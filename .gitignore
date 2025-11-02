@@ -1,0 +1,23 @@
+__pycache__/
+*.pyc
+*.pyo
+.DS_Store
+.idea/
+.vscode/
+
+# Data and large artifacts
+data/
+logs/
+output/
+input/
+
+# SQLite files anywhere
+*.sqlite3
+*.db
+*.db-wal
+*.db-shm
+*.sqlite3-wal
+*.sqlite3-shm
+
+# Rust build output
+scripts/sort/target/
