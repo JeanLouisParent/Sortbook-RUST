@@ -36,7 +36,7 @@ Download and place these files under `data/dumps/`:
 Ensure you have sufficient disk space; the dumps plus the resulting SQLite DB can require tens of gigabytes.
 
 ### 2) Install Tooling
-You need Python, Rust, and Ollama. Below are convenience scripts you can run per platform. Adjust to your environment as needed.
+You need Python, Rust, and Ollama. Below are convenience scripts you can run per platform. After installing Ollama, pull the model `mistral:7b`.
 
 Windows (PowerShell):
 ```
@@ -50,6 +50,9 @@ winget install -e --id Ollama.Ollama
 # Python libs
 python -m pip install --upgrade pip
 python -m pip install tqdm ujson
+
+# Pull the required model
+ollama pull mistral:7b
 ```
 
 macOS (bash/zsh with Homebrew):
@@ -62,6 +65,9 @@ brew install ollama
 
 python3 -m pip install --upgrade pip
 python3 -m pip install tqdm ujson
+
+# Pull the required model
+ollama pull mistral:7b
 ```
 
 Linux (Debian/Ubuntu):
@@ -75,10 +81,13 @@ curl -fsSL https://ollama.com/install.sh | sh
 
 python3 -m pip install --upgrade pip
 python3 -m pip install tqdm ujson
+
+# Pull the required model
+ollama pull mistral:7b
 ```
 
 Notes:
-- The sorter does not require Ollama to run; the embedded prompt remains in French if you use an LLM.
+- Ollama is required and the `mistral:7b` model must be available locally.
 - If building on Apple Silicon, ensure toolchains are ARM-compatible.
 
 ## Build the SQLite DB from Dumps
