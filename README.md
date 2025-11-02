@@ -1,5 +1,3 @@
-# sortbook2
-
 An end-to-end toolkit to sort very large French eBook libraries using OpenLibrary metadata, a local SQLite database, and a fast Rust sorter. I created this project because I needed to organize about 250,000 French EPUBs into a clean author/title hierarchy reliably and quickly.
 
 The repo contains:
