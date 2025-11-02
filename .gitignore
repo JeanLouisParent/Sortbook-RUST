@@ -10,6 +10,12 @@ data/
 logs/
 output/
 input/
+!data/.gitkeep
+!data/database/.gitkeep
+!data/dumps/.gitkeep
+!logs/.gitkeep
+!output/.gitkeep
+!input/.gitkeep
 
 # SQLite files anywhere
 *.sqlite3
