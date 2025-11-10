@@ -3,12 +3,12 @@
 Crate: `scripts/cleanup/` — main file `scripts/cleanup/src/main.rs`
 
 Purpose
-- Single-pass pipeline for author folders: normalize/rename directories, merge duplicates, generate `output/authors.csv`, match names against the OpenLibrary database, and consolidate every folder that shares an `author_id`. Recommended order: run the sorter (`scripts/sort`) first to populate `output/sorted_books/`, then execute `cleanup` on that tree. Both binaries remain independent, so `cleanup` can target any directory of author folders if needed.
+- Single-pass pipeline for author folders: normalize/rename directories, merge duplicates, generate `data/authors.csv`, match names against the OpenLibrary database, and consolidate every folder that shares an `author_id`. Recommended order: run the sorter (`scripts/sort`) first to populate `output/sorted_books/`, then execute `cleanup` on that tree. Both binaries remain independent, so `cleanup` can target any directory of author folders if needed.
 
 CLI (struct `Cli`)
-- `--root <path>` (required): directory that contains author folders (one level deep).
+- `--root <path>`: directory that contains author folders (one level deep). Default `output/sorted_books`.
 - `--db <path>`: OpenLibrary SQLite file, default `data/database/openlibrary.sqlite3`.
-- `--csv <path>`: generated CSV path, default `output/authors.csv`.
+- `--csv <path>`: generated CSV path, default `data/authors.csv`.
 - `--min-files <n>`: minimum number of files a folder must contain before it participates in `author_id` merges. Default `0`.
 - `--probable-threshold <f64>`: minimum score for reusing a `probable_author_multi` suggestion (sequence score preferred, otherwise average). Default `0.90`.
 - `--dry-run`: log planned renames/merges without touching the filesystem.
@@ -47,7 +47,7 @@ SQLite Matching
 
 CSV
 - Always regenerated from the latest scan; no dependency on a pre-existing file.
-- Layout matches the historical `output/authors.csv` sample.
+- Layout matches the historical CSV sample, now written to `data/authors.csv` by default.
 
 Merge by `author_id`
 - Group confirmed IDs or probable IDs (score ≥ `--probable-threshold`). `entry_best_probable_display` supplies a fallback display name when none exists in the DB.
@@ -57,4 +57,4 @@ Merge by `author_id`
 Notes
 - This binary replaces the old helper scripts (`match_authors.py`, `merge_author_dirs.py`, `merge_books.py`, `normalize_names.py`); do not reintroduce them.
 - Always perform a dry run before applying changes on a large corpus.
-- The generated CSV is referenced in user documentation as `output/authors.csv`; change the flag only if the documentation is updated accordingly.
+- The generated CSV is referenced in user documentation as `data/authors.csv`; change the flag only if the documentation is updated accordingly.

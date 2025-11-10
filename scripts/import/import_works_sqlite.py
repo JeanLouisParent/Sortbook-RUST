@@ -114,8 +114,8 @@ def configure_connection(conn: sqlite3.Connection) -> None:
         "PRAGMA journal_mode = WAL;",
         "PRAGMA synchronous = NORMAL;",
         "PRAGMA temp_store = MEMORY;",
-        "PRAGMA cache_size = -2000000;",  # ~2 Go de cache mémoire
-        "PRAGMA mmap_size = 17179869184;",  # ~16 Go de mmap
+        "PRAGMA cache_size = -2000000;",  # ~2 GB of in-memory cache
+        "PRAGMA mmap_size = 17179869184;",  # ~16 GB mmap window
         "PRAGMA wal_autocheckpoint = 20000;",
         "PRAGMA locking_mode = EXCLUSIVE;",
         "PRAGMA foreign_keys = OFF;",
@@ -197,9 +197,9 @@ def import_works(
     os.makedirs(os.path.dirname(db_path) or ".", exist_ok=True)
 
     if not os.path.exists(dump_file):
-        raise FileNotFoundError(f"Dump introuvable : {dump_file}")
+        raise FileNotFoundError(f"Dump not found: {dump_file}")
 
-    # Purge éventuels fichiers WAL/SHM résiduels avant l'ouverture de la base
+    # Remove any leftover WAL/SHM files before opening the database
     base_prefix = db_path
     for suffix in ("-wal", "-shm"):
         try:
@@ -207,7 +207,7 @@ def import_works(
         except FileNotFoundError:
             pass
         except OSError as exc:
-            print(f"⚠️ Impossible de supprimer {base_prefix}{suffix} ({exc})")
+            print(f"⚠️ Unable to delete {base_prefix}{suffix} ({exc})")
 
     conn = sqlite3.connect(db_path)
     try:
@@ -218,7 +218,7 @@ def import_works(
             conn.commit()
 
         total_lines = count_lines(dump_file)
-        print(f"📏 Dump {dump_file} : {total_lines:,} lignes")
+        print(f"📏 Dump {dump_file}: {total_lines:,} lines")
 
         processed = 0
         batch: List[Tuple[str, str, str, str]] = []
@@ -227,7 +227,7 @@ def import_works(
         conn.execute("BEGIN;")
 
         with open(dump_file, "r", encoding="utf-8") as handle, \
-                tqdm(total=total_lines, desc="🚚 Import works", unit="ligne", unit_scale=False) as progress:
+                tqdm(total=total_lines, desc="🚚 Import works", unit="line", unit_scale=False) as progress:
             for line in handle:
                 progress.update(1)
                 item = parse_line(line)
@@ -269,24 +269,24 @@ def import_works(
         conn.close()
 
     duration = time.time() - t0
-    print(f"✅ Import terminé : {processed} works en {duration:.2f}s → {db_path}")
+    print(f"✅ Import complete: {processed} works in {duration:.2f}s → {db_path}")
 
 
 # === CLI ===
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Import séquentiel OpenLibrary Works (sans bases partielles)."
+        description="Sequential OpenLibrary works import (no temporary databases)."
     )
-    parser.add_argument("--db", default=DB_PATH, help="Base SQLite cible")
-    parser.add_argument("--batch", "-b", type=int, default=BATCH_SIZE, help="Taille des lots d'insertion")
-    parser.add_argument("--force", "-f", action="store_true", help="Recrée la table works" )
-    parser.add_argument("--vacuum", "-v", action="store_true", help="Exécute VACUUM en fin d'import")
+    parser.add_argument("--db", default=DB_PATH, help="Target SQLite database path")
+    parser.add_argument("--batch", "-b", type=int, default=BATCH_SIZE, help="Number of rows per INSERT batch")
+    parser.add_argument("--force", "-f", action="store_true", help="Drop and recreate the works table")
+    parser.add_argument("--vacuum", "-v", action="store_true", help="Run VACUUM after the import finishes")
     parser.add_argument(
         "--commit-interval",
         "-c",
         type=int,
         default=1_000_000,
-        help="Nombre de lignes insérées avant commit (0 = commit final unique)",
+        help="Rows inserted before issuing a COMMIT (0 = single final commit)",
     )
     parser.add_argument("--dump", default=DUMP_FILE, help="Works dump file path")
     parser.add_argument("--verbose", action="store_true", help="Print extra progress logs")

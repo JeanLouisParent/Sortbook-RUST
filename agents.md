@@ -11,7 +11,7 @@ This file provides guidance for assistants working in this repo. Follow these ru
 - Python import scripts build a local OpenLibrary SQLite database from dumps under `data/dumps/` into `data/database/openlibrary.sqlite3`:
   - `scripts/import/import_authors_sqlite.py`
   - `scripts/import/import_works_sqlite.py`
-- Rust cleanup utility (`scripts/cleanup`) normalizes/merges author folders under a given `--root`, produces `output/authors.csv`, matches authors against the SQLite DB, then consolidates every folder that shares the same `author_id` (or a probable ID above the configured threshold).
+- Rust cleanup utility (`scripts/cleanup`) normalizes/merges author folders under a given `--root`, produces `data/authors.csv`, matches authors against the SQLite DB, then consolidates every folder that shares the same `author_id` (or a probable ID above the configured threshold).
 - Rust sorter `sortbook` lives in `scripts/sort/` and moves files from `input/<ext>/` into the `output/` buckets using the local DB.
 - Logs live under `logs/`, including state (`sortbook_state.jsonl`) and copy failure logs (`sortbook_copy_failures.jsonl`).
 
@@ -29,21 +29,22 @@ This file provides guidance for assistants working in this repo. Follow these ru
 - Input: `input/<ext>/` (e.g., `input/epub/`).
 - Database: `data/database/openlibrary.sqlite3`.
 - Outputs: `output/sorted_books/`, `output/fail_author/`, `output/fail_title/`.
-- Cleanup-generated CSV: `output/authors.csv` (location referenced in public docs).
+- Cleanup-generated CSV: `data/authors.csv` (location referenced in public docs).
 - Logs: `logs/sortbook.log`, `logs/sortbook_state.jsonl`, `logs/sortbook_copy_failures.jsonl`.
 
 ## Cleanup Crate Notes
 - Location: Cargo crate under `scripts/cleanup`.
-- Responsibilities: (1) rename/normalize/merge author folders under the provided `--root`, (2) regenerate `output/authors.csv` with `author_id`, `author_name_db`, and `probable_author_multi`, (3) merge folders that share the same confirmed author_id (or a probable ID above the threshold).
+- Responsibilities: (1) rename/normalize/merge author folders under the provided `--root`, (2) regenerate `data/authors.csv` with `author_id`, `author_name_db`, and `probable_author_multi`, (3) merge folders that share the same confirmed author_id (or a probable ID above the threshold).
 - Build/Run:
   ```
   cargo run --manifest-path scripts/cleanup/Cargo.toml -- \
-    --root <path to author folders> \
+    --root output/sorted_books \
     --db data/database/openlibrary.sqlite3 \
-    --csv output/authors.csv \
+    --csv data/authors.csv \
     [--min-files N] [--probable-threshold 0.90] [--dry-run]
   ```
 - Recommended order: run the `scripts/sort` binary first (to populate `output/sorted_books/`), then execute `cleanup` on that output. The two tools remain independent if another directory needs to be processed.
+- Defaults align with the sorter output tree: `--root output/sorted_books`, `--csv data/authors.csv`.
 - Always use `--dry-run` before applying destructive changes; without it, moves/renames happen for real.
 - This binary replaces the legacy Python scripts `match_authors.py`, `merge_author_dirs.py`, `merge_books.py`, `normalize_names.py` (do not reintroduce them).
 

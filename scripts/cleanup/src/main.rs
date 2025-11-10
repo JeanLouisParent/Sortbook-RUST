@@ -18,8 +18,9 @@ const WINDOWS_RESERVED: &[&str] = &[
     "com9", "lpt1", "lpt2", "lpt3", "lpt4", "lpt5", "lpt6", "lpt7", "lpt8", "lpt9",
 ];
 
+const DEFAULT_ROOT: &str = "output/sorted_books";
 const DEFAULT_DB: &str = "data/database/openlibrary.sqlite3";
-const DEFAULT_CSV: &str = "output/authors.csv";
+const DEFAULT_CSV: &str = "data/authors.csv";
 const PROBABLE_MIN_SCORE: f64 = 0.90;
 const NEIGHBOR_LIMIT: i64 = 25;
 
@@ -32,7 +33,7 @@ static PAREN_RE: Lazy<Regex> = Lazy::new(|| Regex::new(r"\([^\)]+\)").unwrap());
 #[command(name = "cleanup", version)]
 struct Cli {
     /// Root directory containing author folders.
-    #[arg(long)]
+    #[arg(long, default_value = DEFAULT_ROOT)]
     root: PathBuf,
 
     /// OpenLibrary SQLite database path.

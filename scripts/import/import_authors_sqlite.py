@@ -106,10 +106,10 @@ def import_authors(db_path: str, dump_file: str, verbose: bool = False) -> None:
             except Exception as e:
                 # Skip malformed lines, keep behavior identical (log + continue)
                 if verbose:
-                    print(f"⚠️ Ligne {i} ignorée ({e})")
+                    print(f"⚠️ Skipping line {i} ({e})")
                 continue
 
-    print(f"{len(authors_by_name)} noms d’auteurs uniques traités")
+    print(f"{len(authors_by_name)} unique author names processed")
 
     # Batch insert with de-duplication by normalized name
     batch: List[Tuple[str, str, str, str]] = []
@@ -136,7 +136,7 @@ def import_authors(db_path: str, dump_file: str, verbose: bool = False) -> None:
     conn.commit()
     conn.close()
 
-    print(f"✅ Import terminé : {len(batch)} auteurs insérés dans {db_path}")
+    print(f"✅ Import complete: inserted {len(batch)} authors into {db_path}")
 
 
 # === CLI ===
