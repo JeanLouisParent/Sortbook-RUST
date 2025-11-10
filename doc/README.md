@@ -5,4 +5,4 @@ This folder contains technical, implementation‑level documentation for the Pyt
 - authors_import.md — details for `scripts/import/import_authors_sqlite.py`
 - works_import.md — details for `scripts/import/import_works_sqlite.py`
 - sortbook_rust.md — details for `scripts/sort/src/main.rs`
-
+- cleanup_rust.md — details for `scripts/cleanup/src/main.rs`

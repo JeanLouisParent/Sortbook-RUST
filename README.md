@@ -10,6 +10,7 @@ The repo contains:
   - `import/`
     - `import_authors_sqlite.py` — build the `authors` table from the authors dump.
     - `import_works_sqlite.py` — sequential import of `works` with de-duplication and SQLite performance tweaks.
+  - `cleanup/` — Rust crate for normalizing/merging author folders and generating `output/authors.csv`.
   - `sort/` — Rust crate for the `sortbook` binary.
 - `data/`
   - `dumps/` — place OpenLibrary dumps here (e.g., `ol_dump_works.txt`, `ol_dump_authors.txt`).
@@ -119,6 +120,33 @@ Schema overview:
   - Index: `idx_name_norm(name_normalized)`
 - `works(work_id TEXT UNIQUE, title TEXT, title_normalized TEXT PRIMARY KEY, author_id TEXT, alternate_id TEXT)`
   - Index: `idx_works_author_id(author_id)`
+
+## Clean Up Existing Author Folders
+
+The `scripts/cleanup` crate replaces the previous ad-hoc Python helpers. It performs the full pipeline in one run:
+
+1. Normalize folder names (standard `Last, First` formatting, accent stripping, invalid character sanitation) and merge duplicates while preserving the largest files.
+2. Scan the `--root` directory (one level deep) and generate `output/authors.csv` automatically. Each row contains the folder name plus the resolved OpenLibrary identifiers.
+3. Match author names against `data/database/openlibrary.sqlite3` (or a custom `--db`), filling `author_id`, `author_name_db`, and `probable_author_multi` scores.
+4. Merge every folder that shares the same confirmed author_id (or a probable ID above the configured threshold) into the best destination directory.
+
+Recommended flow: run the sorter first (`scripts/sort`, fills `output/sorted_books/`), then invoke `cleanup` on that output directory so you consolidate the final author folders with up-to-date metadata. Both binaries remain independent—`cleanup` can target any author-folder tree even if the sorter was never run.
+
+Example run:
+```
+cargo run --manifest-path scripts/cleanup/Cargo.toml -- \
+  --root output/sorted_books \
+  --db data/database/openlibrary.sqlite3 \
+  --csv output/authors.csv \
+  --min-files 5
+```
+
+Useful flags:
+- `--dry-run` only logs planned moves/renames.
+- `--probable-threshold <f64>` adjusts the minimum score (default `0.90`) to reuse probable matches when `author_id` is missing.
+- `--min-files <n>` skips tiny folders when merging by author_id.
+
+By default the CSV is written to `output/authors.csv`, matching the sample already committed in that folder.
 
 ## How To Use (Rust Sorter)
 

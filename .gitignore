@@ -27,3 +27,4 @@ input/
 
 # Rust build output
 scripts/sort/target/
+scripts/cleanup/target/
