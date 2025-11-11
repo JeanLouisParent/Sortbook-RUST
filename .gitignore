@@ -26,5 +26,7 @@ input/
 *.sqlite3-shm
 
 # Rust build output
-scripts/sort/target/
-scripts/cleanup/target/
+**/target/
+
+# Lock files for leaf crates under scripts (optional to keep root workspace clean)
+scripts/**/Cargo.lock

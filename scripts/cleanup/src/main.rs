@@ -221,6 +221,8 @@ fn match_and_fill(db_path: &Path, authors: &mut [AuthorEntry]) -> Result<()> {
     Ok(())
 }
 
+// (online alias support removed; cleanup is offline-only)
+
 fn write_authors_csv(path: &Path, authors: &[AuthorEntry]) -> Result<()> {
     if let Some(parent) = path.parent() {
         fs::create_dir_all(parent)?;

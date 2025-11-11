@@ -17,6 +17,8 @@ The repo contains:
   - `database/` — generated SQLite databases (`openlibrary.sqlite3`, etc.).
 - `input/` — per-type input folders (e.g., `input/epub`, `input/pdf`).
 - `output/` — sorter outputs (`sorted_books`, `fail_author`, `fail_title`).
+  - New utility: `cleanup-filenames` (Rust) to normalize book filenames inside author folders. See Documentation section below.
+  - New utility: `author-alias-online` (Rust) to resolve author aliases via Wikidata, preview moves, and optionally reorganize folders.
 - `logs/` — logs and state files (resume markers, copy failures, sorter logs).
 
 ## Introduction
@@ -240,6 +242,56 @@ Performance note:
 - Using `GLOB` on normalized columns allows SQLite to leverage indexes, reducing lookup time from seconds to milliseconds on large tables.
 
 ## Contributing / Support
+
+## Filename Cleanup Utility (Rust)
+
+The repo ships a small companion binary to normalize book filenames within each author directory. It processes each subfolder independently, keeps the best variant for duplicates, and reports per-author counts.
+
+- Location: `scripts/cleanup-filenames/`
+- Build: `cargo build --manifest-path scripts/cleanup-filenames/Cargo.toml`
+- Run (defaults): `cargo run --manifest-path scripts/cleanup-filenames/Cargo.toml`
+- Defaults:
+  - Root: `output/sorted_book` (override via `--root <path>`)
+  - Dry-run: `true` (set `--dry-run false` to apply changes)
+  - Parallel: processes author folders in parallel (Rayon)
+
+Behavior
+- Groups files by a normalized basename (lowercased, punctuation stripped, spaces squashed, de-accented) within each subfolder.
+- Selection rule: prefer the variant that contains accents; otherwise keep the largest file by size.
+- Rename the kept file so only the first letter is capitalized; remove other duplicates in the group.
+- Prints: one summary line per author with the number of processed files.
+
+Examples
+- Dry-run (no changes):
+  - `cargo run --manifest-path scripts/cleanup-filenames/Cargo.toml`
+- Apply changes (disable dry-run):
+  - `cargo run --manifest-path scripts/cleanup-filenames/Cargo.toml -- --dry-run false`
+- Target another root:
+  - `cargo run --manifest-path scripts/cleanup-filenames/Cargo.toml -- --root output/sorted_books`
 - Check `agents.md` for project-specific guidelines.
 - If OpenLibrary dump formats change, adjust the import scripts accordingly.
 - Issues and PRs that improve reliability, performance, or documentation are welcome.
+## Author Alias Resolver (Online, Rust)
+
+Use this companion binary to fetch author aliases from Wikidata, compute a robust score that matches your local folder name, and optionally move/merge folders to a canonical "Last, First" form (accents removed). It always keeps the largest file on duplicates and writes a CSV as evidence when not in dry-run.
+
+- Location: `scripts/author-alias-online/`
+- Build: `cargo build --manifest-path scripts/author-alias-online/Cargo.toml`
+- Run examples:
+  - Dry‑run (no changes):
+    - `cargo run --manifest-path scripts/author-alias-online/Cargo.toml -- --dry-run true --verbose`
+  - Apply changes (score > 0.90 only) + write CSV proof:
+    - `cargo run --manifest-path scripts/author-alias-online/Cargo.toml -- --dry-run false --verbose`
+- Defaults and behavior:
+  - Root: `output/sorted_book` (override via `--root <path>`)
+  - CSV: `data/online_aliases.csv` (written only when `--dry-run false`)
+  - Prefer label language: `--prefer-lang en|fr` (default `en`)
+  - Timeout: `--timeout 5`
+  - Limit: `--limit 0` (all)
+  - Console output: prints OK/MISS, QID, label, score, truncated description, and computed target folder
+  - Destination naming: normalized "Last, First" (accents removed, safe characters only)
+  - Apply rule: when `--dry-run false` and score > 0.90, move/merge to the target folder; if duplicates occur, the largest file is kept
+  - Scoring highlights:
+    - Exact match after inversion → 1.00
+    - Token F1 overlap across both forms (First Last and Last, First)
+    - Small role bonus (+0.1) if description indicates writer/author/novelist/poet

@@ -29,6 +29,8 @@ This file provides guidance for assistants working in this repo. Follow these ru
 - Input: `input/<ext>/` (e.g., `input/epub/`).
 - Database: `data/database/openlibrary.sqlite3`.
 - Outputs: `output/sorted_books/`, `output/fail_author/`, `output/fail_title/`.
+  - Additional utility: `scripts/cleanup-filenames` normalizes book filenames inside author folders. Default root `output/sorted_book`.
+  - Online resolver: `scripts/author-alias-online` fetches author aliases from Wikidata and can move/merge folders when enabled.
 - Cleanup-generated CSV: `data/authors.csv` (location referenced in public docs).
 - Logs: `logs/sortbook.log`, `logs/sortbook_state.jsonl`, `logs/sortbook_copy_failures.jsonl`.
 
@@ -45,6 +47,32 @@ This file provides guidance for assistants working in this repo. Follow these ru
   ```
 - Recommended order: run the `scripts/sort` binary first (to populate `output/sorted_books/`), then execute `cleanup` on that output. The two tools remain independent if another directory needs to be processed.
 - Defaults align with the sorter output tree: `--root output/sorted_books`, `--csv data/authors.csv`.
+
+## Filename Cleanup Notes
+- Location: Cargo crate under `scripts/cleanup-filenames`.
+- Responsibility: normalize book filenames per subfolder, deduplicate by normalized key (prefer accented variant, else largest by size), and rename to Title with only the first letter capitalized. Removes losers when not in dry-run.
+- Build/Run:
+  - `cargo build --manifest-path scripts/cleanup-filenames/Cargo.toml`
+  - `cargo run --manifest-path scripts/cleanup-filenames/Cargo.toml -- [--root <path>] [--exts csv] [--dry-run true|false] [--verbose]`
+- Defaults:
+  - `--root output/sorted_book`
+  - `--dry-run true` (use `--dry-run false` to apply)
+- Parallelization: processes author directories in parallel; console output order is not guaranteed.
+
+## Online Author Alias Notes
+- Location: Cargo crate under `scripts/author-alias-online`.
+- Responsibility: for each author folder name, query Wikidata, score the best candidate using normalized/inverted forms, and optionally move/merge to a canonical "Last, First" folder (accents removed). Writes a CSV proof when not in dry-run.
+- Build/Run:
+  - `cargo build --manifest-path scripts/author-alias-online/Cargo.toml`
+  - `cargo run --manifest-path scripts/author-alias-online/Cargo.toml -- [--root <path>] [--prefer-lang en|fr] [--timeout N] [--limit N] [--dry-run true|false] [--verbose]`
+- Defaults/Rules:
+  - `--root output/sorted_book`
+  - `--dry-run true` by default; no changes unless set to false
+  - Moves/merges only when score > 0.90
+  - Duplicate files: keeps the largest
+  - Target folder format: normalized "Last, First" without accents
+  - Scoring: exact/inverted normalized match → 1.0; token F1 overlap; small role bonus (+0.1) if description indicates author-like roles
+- Safety: Network use is explicit; failures/timeouts do not abort processing.
 - Always use `--dry-run` before applying destructive changes; without it, moves/renames happen for real.
 - This binary replaces the legacy Python scripts `match_authors.py`, `merge_author_dirs.py`, `merge_books.py`, `normalize_names.py` (do not reintroduce them).
 
